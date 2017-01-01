@@ -7,37 +7,38 @@ import smtplib
 from email.mime.text import MIMEText
 
 # You can replace your zip code in the url
-BASE_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MN{}LL%2FA&location=94404&little=true&cppart=ATT%2FUS'
-JETBLACK_ONLY = True
+ZIP_CODE = '94404'
+BASE_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MN{}LL%2FA&location={}'
+BASE_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0={}%2FA&location={}'
+JETBLACK_ONLY = False
+AIRPOD_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MMEF2AM%2FA&location=94404'
 
-def main(jetblack_only=True):
-    if jetblack_only:
-        part_no_dict = {'jetblack': 572}
-    else:
-        # Only contains iphone 128GB 7 plus
-        part_no_dict = {
-            'jetblack': 572,
-            'black': 522,
-            'silver': 532,
-            'gold': 552,
-            'rose_gold': 562,
-        }
+# Only contains iphone 128GB 7 plus
+PART_NO_DICT = {
+    'jetblack': 'MN572LL',
+    'black': 'MN522LL',
+    'silver': 'MN532LL',
+    'gold': 'MN552LL',
+    'rose_gold': 'MN562LL',
+    'airpod': 'MMEF2AM',
+}
 
+def main():
     final_result = []
-    for color, part_no in part_no_dict.items():
-        store_list = query_phone(part_no)
+    for part_name, part_no in PART_NO_DICT.items():
+        store_list = query_item(part_no)
         result_by_color = process_stores(store_list)
         final_result.extend(result_by_color)
 
     if final_result:
-        send_email(final_result)
+        pass
+        #send_email(final_result)
+    print(format_msg(final_result))
 
-
-def query_phone(part_no):
-    r = requests.get(BASE_URL.format(part_no))
+def query_item(part_no):
+    r = requests.get(BASE_URL.format(part_no, ZIP_CODE))
     response = r.json()
     return response['body']['stores']
-
 
 def process_stores(store_list):
     result = []
@@ -49,15 +50,18 @@ def process_stores(store_list):
             availability = part_info['pickupSearchQuote'].encode('utf-8')
             device_name = part_info['storePickupProductTitle'].encode('utf-8')
             if 'Available' in availability:
-                result.append((store_name, device_name, availability))
+                result.append((store_name, device_name, availability.replace('<br/>', ' ')))
 
     return result
 
-
-def send_email(result):
+def format_msg(result):
     msg_string = ''
     for store_name, device_name, availability in result:
-        msg_string += '{} {} {} \n'.format(store_name, device_name, availability)
+        msg_string += '{: <40}{: <20}{: <10}\n'.format(device_name, store_name, availability)
+    return msg_string
+
+def send_email(result):
+    msg = format_msg(result)
     msg = MIMEText(msg_string)
     msg['To'] = email.utils.formataddr(('Recipient', 'cyandterry@gmail.com'))
     msg['From'] = email.utils.formataddr(('Author', 'cyandterry@gmail.com'))
@@ -72,12 +76,14 @@ def send_email(result):
     server.sendmail('cyandterry@gmail.com', 'cyandterry@gmail.com', msg.as_string())
     server.quit()
 
-
 if __name__ == '__main__':
-    main(jetblack_only=JETBLACK_ONLY)
+    main()
 
 
 '''
+# Airpod
+http://www.apple.com/shop/retail/pickup-message?parts.0=MMEF2AM%2FA&location=94404
+
 # Jetblack
 http://www.apple.com/shop/retail/pickup-message?parts.0=MN572LL%2FA&location=94404&little=true&cppart=ATT%2FUS
 parts.0:MN572LL/A
