@@ -10,7 +10,6 @@ from email.mime.text import MIMEText
 ZIP_CODE = '94404'
 BASE_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MN{}LL%2FA&location={}'
 BASE_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0={}%2FA&location={}'
-JETBLACK_ONLY = False
 AIRPOD_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MMEF2AM%2FA&location=94404'
 
 # Only contains iphone 128GB 7 plus
@@ -31,8 +30,7 @@ def main():
         final_result.extend(result_by_color)
 
     if final_result:
-        pass
-        #send_email(final_result)
+        send_email(final_result)
     print(format_msg(final_result))
 
 def query_item(part_no):
