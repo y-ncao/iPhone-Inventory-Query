@@ -59,7 +59,7 @@ def format_msg(result):
     return msg_string
 
 def send_email(result):
-    msg = format_msg(result)
+    msg_string = format_msg(result)
     msg = MIMEText(msg_string)
     msg['To'] = email.utils.formataddr(('Recipient', 'cyandterry@gmail.com'))
     msg['From'] = email.utils.formataddr(('Author', 'cyandterry@gmail.com'))
