@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Please use 'pip install requests' if package is not installed
+import difflib
 import email.utils
 import requests
 import smtplib
@@ -14,11 +15,6 @@ AIRPOD_URL = 'http://www.apple.com/shop/retail/pickup-message?parts.0=MMEF2AM%2F
 
 # Only contains iphone 128GB 7 plus
 PART_NO_DICT = {
-    'jetblack': 'MN572LL',
-    'black': 'MN522LL',
-    'silver': 'MN532LL',
-    'gold': 'MN552LL',
-    'rose_gold': 'MN562LL',
     'airpod': 'MMEF2AM',
 }
 
@@ -29,9 +25,25 @@ def main():
         result_by_color = process_stores(store_list)
         final_result.extend(result_by_color)
 
-    if final_result:
-        send_email(final_result)
-    print(format_msg(final_result))
+    new_data = parse_result(final_result)
+
+    try:
+        with open('data.txt', 'r') as f:
+            old_data = f.readlines()
+    except IOError:
+        old_data = []
+
+    msg_string = ''
+    for line in difflib.unified_diff(old_data, new_data, fromfile='old', tofile='new', lineterm=''):
+        msg_string += line
+
+    if msg_string:
+        send_email(msg_string)
+        print(msg_string)
+
+        with open('data.txt', 'w') as f:
+            old_data = f.writelines(new_data)
+
 
 def query_item(part_no):
     r = requests.get(BASE_URL.format(part_no, ZIP_CODE))
@@ -52,18 +64,17 @@ def process_stores(store_list):
 
     return result
 
-def format_msg(result):
-    msg_string = ''
+def parse_result(result):
+    parsed_result = []
     for store_name, device_name, availability in result:
-        msg_string += '{: <40}{: <20}{: <10}\n'.format(device_name, store_name, availability)
-    return msg_string
+        parsed_result.append('{: <40}{: <20}{: <10}\n'.format(device_name, store_name, availability))
+    return parsed_result
 
-def send_email(result):
-    msg_string = format_msg(result)
+def send_email(msg_string):
     msg = MIMEText(msg_string)
     msg['To'] = email.utils.formataddr(('Recipient', 'cyandterry@gmail.com'))
-    msg['From'] = email.utils.formataddr(('Author', 'cyandterry@gmail.com'))
-    msg['Subject'] = 'Go and Purchase your Shiny iPhone!'
+    msg['From'] = email.utils.formataddr(('Yan Cao', 'cyandterry@gmail.com'))
+    msg['Subject'] = 'Go and Purchase!'
 
     # Don't try my password, it's invalid
     username = 'cyandterry@gmail.com'
