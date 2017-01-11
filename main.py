@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 from twilio.rest import TwilioRestClient
 
 config_parser = SafeConfigParser()
-config_parser.read('config.ini')
+config_parser.read('config')
 
 
 TWILIO_CONFIG = dict(
