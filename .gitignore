@@ -52,6 +52,8 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+*~
+
 # Ignore the config file and data file
 config
 data.txt
