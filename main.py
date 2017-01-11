@@ -5,7 +5,24 @@ import difflib
 import email.utils
 import requests
 import smtplib
+from ConfigParser import SafeConfigParser
 from email.mime.text import MIMEText
+from twilio.rest import TwilioRestClient
+
+config_parser = SafeConfigParser()
+config_parser.read('config.ini')
+
+
+TWILIO_CONFIG = dict(
+    account_sid = config_parser.get('Twilio', 'account_sid'),
+    auth_token = config_parser.get('Twilio', 'auth_token'),
+    twilio_phone_number = config_parser.get('Twilio', 'twilio_phone_number'),
+    receipient_phone_number = config_parser.get('Twilio', 'receipient_phone_number'),
+)
+EMAIL_CONFIG = dict(
+    username = config_parser.get('Gmail', 'username'),
+    password = config_parser.get('Gmail', 'password'),
+)
 
 # You can replace your zip code in the url
 ZIP_CODE = '94404'
@@ -38,12 +55,12 @@ def main():
         msg_string += line
 
     if msg_string:
-        send_email(msg_string)
+        sms_sid = send_sms()
+        send_email(msg_string + '\n' + 'sms sid: ' + sms_sid)
         print(msg_string)
 
         with open('data.txt', 'w') as f:
             old_data = f.writelines(new_data)
-
 
 def query_item(part_no):
     r = requests.get(BASE_URL.format(part_no, ZIP_CODE))
@@ -72,18 +89,27 @@ def parse_result(result):
 
 def send_email(msg_string):
     msg = MIMEText(msg_string)
-    msg['To'] = email.utils.formataddr(('Recipient', 'cyandterry@gmail.com'))
-    msg['From'] = email.utils.formataddr(('Yan Cao', 'cyandterry@gmail.com'))
+    msg['To'] = email.utils.formataddr(('Recipient', EMAIL_CONFIG['username']))
+    msg['From'] = email.utils.formataddr(('Yan Cao', EMAIL_CONFIG['username']))
     msg['Subject'] = 'Go and Purchase!'
 
     # Don't try my password, it's invalid
-    username = 'cyandterry@gmail.com'
-    password = '123456'
+    username = EMAIL_CONFIG['username']
+    password = EMAIL_CONFIG['password']
     server = smtplib.SMTP('smtp.gmail.com:587')
     server.starttls()
     server.login(username, password)
-    server.sendmail('cyandterry@gmail.com', 'cyandterry@gmail.com', msg.as_string())
+    server.sendmail(EMAIL_CONFIG['username'], EMAIL_CONFIG['username'], msg.as_string())
     server.quit()
+
+def send_sms():
+    client = TwilioRestClient(TWILIO_CONFIG['account_sid'], TWILIO_CONFIG['auth_token'])
+    message = client.messages.create(
+        body="There's change in Airpod stock. Please check your email for more information.",
+        to=TWILIO_CONFIG['receipient_phone_number'],
+        from_=TWILIO_CONFIG['twilio_phone_number'],
+    )
+    return message.sid
 
 if __name__ == '__main__':
     main()
